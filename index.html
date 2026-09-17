@@ -682,7 +682,7 @@ function safeLSRemove(k){
     <div class="display-colors menu-display-colors" role="group" aria-label="Color de visualización">
       <button class="display-color-btn" data-theme="light" type="button"><span class="color-dot light"></span>Claro</button>
       <button class="display-color-btn" data-theme="dark" type="button"><span class="color-dot dark"></span>Oscuro</button>
-      <button id="installAppBtn" class="display-color-btn install-menu-btn hidden" type="button">⬇ Instalar aplicación</button>
+      <button id="installAppBtn" class="display-color-btn install-menu-btn" type="button">⬇ Instalar aplicación</button>
     </div>
   </div>
 </div>
@@ -1259,8 +1259,8 @@ function safeLSRemove(k){
       setInstallVisible(false);
       return;
     }
-    // Solo se muestra cuando Chrome ya entregó el instalador nativo.
-    setInstallVisible(!!installPromptV114);
+    // En navegador se mantiene visible. Solo se oculta en modo instalado.
+    setInstallVisible(true);
   }
 
   // Si Chrome ofrece instalación, eso confirma que NO está instalada.
@@ -1307,9 +1307,40 @@ function safeLSRemove(k){
         return;
       }
 
-      // Si Chrome todavía no ofrece instalación, no mostramos mensajes manuales.
-      // El botón permanecerá oculto hasta que llegue beforeinstallprompt.
-      setInstallVisible(false);
+      // Si Chrome todavía no entregó el evento, esperamos brevemente sin
+      // ocultar el botón ni mostrar instrucciones manuales.
+      try{
+        if('serviceWorker' in navigator){
+          await navigator.serviceWorker.ready;
+        }
+      }catch(_e){}
+
+      const event = await new Promise(resolve => {
+        let done = false;
+        const finish = value => { if(done) return; done = true; resolve(value); };
+        const handler = ev => {
+          ev.preventDefault();
+          installPromptV114 = ev;
+          finish(ev);
+        };
+        window.addEventListener('beforeinstallprompt', handler, {once:true});
+        setTimeout(() => finish(null), 2500);
+      });
+
+      if(event || installPromptV114){
+        try{
+          const p = installPromptV114 || event;
+          await p.prompt();
+          const choice = await p.userChoice;
+          if(choice && choice.outcome === 'accepted'){
+            safeLSSet(installKey,'1');
+            setInstallVisible(false);
+          }
+        }catch(_e){}
+        installPromptV114 = null;
+      }
+      // Si Chrome aún no está listo, el botón queda visible para volver a tocarlo.
+      if(!isStandalone()) setInstallVisible(true);
     }, true);
   }
 
@@ -1323,7 +1354,7 @@ function safeLSRemove(k){
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
     window.addEventListener('load', async () => {
       try{
-        const reg = await navigator.serviceWorker.register('./service-worker.js?v=131', {updateViaCache:'none'});
+        const reg = await navigator.serviceWorker.register('./service-worker.js?v=132', {updateViaCache:'none'});
         await reg.update();
         if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
       }catch(_e){}

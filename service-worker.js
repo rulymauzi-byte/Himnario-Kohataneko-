@@ -1,4 +1,4 @@
-const CACHE_NAME = 'himnario-bit-yik-2026-09-16-v131';
+const CACHE_NAME = 'himnario-bit-yik-2026-09-16-v132';
 const APP_SHELL = [
   './',
   './index.html',
