@@ -1,0 +1,12 @@
+HIMNARIO BIT YIK KI MAM DIOS - V114
+
+Suba a la raíz de su repositorio GitHub Pages estos archivos:
+- index.html
+- manifest.webmanifest
+- service-worker.js
+- fondo_app_geometrico.png
+- carpeta icons completa
+
+No necesita subir index_original_que_envio.html.
+
+Después de reemplazar los archivos, abra el enlace de GitHub Pages con Internet para que Chrome reciba la actualización.

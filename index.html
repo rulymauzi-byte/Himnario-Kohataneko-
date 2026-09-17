@@ -682,7 +682,7 @@ function safeLSRemove(k){
     <div class="display-colors menu-display-colors" role="group" aria-label="Color de visualización">
       <button class="display-color-btn" data-theme="light" type="button"><span class="color-dot light"></span>Claro</button>
       <button class="display-color-btn" data-theme="dark" type="button"><span class="color-dot dark"></span>Oscuro</button>
-      <button id="installAppBtn" class="display-color-btn install-menu-btn hidden" type="button">⬇ Instalar aplicación</button>
+      <button id="installAppBtn" class="display-color-btn install-menu-btn" type="button">⬇ Instalar aplicación</button>
     </div>
   </div>
 </div>
@@ -1142,7 +1142,7 @@ function safeLSRemove(k){
   const installBtn = document.getElementById('installAppBtn');
   const readerMenuBtn = document.getElementById('readerThemeMenuBtn');
   const readerMenuPanel = document.getElementById('readerThemeMenuPanel');
-  const installKey = 'hymnal-installed-v2';
+  const installKey = 'hymnal-installed-v3';
   let installPromptV114 = null;
 
   function savedReaderTheme(){
@@ -1275,8 +1275,10 @@ function safeLSRemove(k){
       setInstallVisible(false);
       return;
     }
-    const knownInstalled = safeLSGet(installKey) === '1';
-    setInstallVisible(!knownInstalled);
+    // En el navegador debe mostrarse. El navegador no ofrece una forma fiable
+    // de saber si una PWA fue desinstalada después; por eso no ocultamos el botón
+    // basándonos únicamente en una marca vieja de localStorage.
+    setInstallVisible(true);
   }
 
   // Si Chrome ofrece instalación, eso confirma que NO está instalada.
@@ -1284,7 +1286,6 @@ function safeLSRemove(k){
     e.preventDefault();
     installPromptV114 = e;
     if(!isStandalone()){
-      safeLSRemove(installKey);
       setInstallVisible(true);
     }
   });
@@ -1343,7 +1344,7 @@ function safeLSRemove(k){
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
     window.addEventListener('load', async () => {
       try{
-        const reg = await navigator.serviceWorker.register('./service-worker.js?v=114', {updateViaCache:'none'});
+        const reg = await navigator.serviceWorker.register('./service-worker.js?v=130', {updateViaCache:'none'});
         await reg.update();
         if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
       }catch(_e){}
