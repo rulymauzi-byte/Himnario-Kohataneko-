@@ -682,7 +682,7 @@ function safeLSRemove(k){
     <div class="display-colors menu-display-colors" role="group" aria-label="Color de visualización">
       <button class="display-color-btn" data-theme="light" type="button"><span class="color-dot light"></span>Claro</button>
       <button class="display-color-btn" data-theme="dark" type="button"><span class="color-dot dark"></span>Oscuro</button>
-      <button id="installAppBtn" class="display-color-btn install-menu-btn" type="button">⬇ Instalar aplicación</button>
+      <button id="installAppBtn" class="display-color-btn install-menu-btn hidden" type="button">⬇ Instalar aplicación</button>
     </div>
   </div>
 </div>
@@ -1105,22 +1105,6 @@ function safeLSRemove(k){
   function themeMenuWrapContains(target){
     return !!(themeMenuBtn && themeMenuPanel && (themeMenuBtn.contains(target) || themeMenuPanel.contains(target)));
   }
-  window.addEventListener('beforeinstallprompt', (e)=>{
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    if(installAppBtn) installAppBtn.classList.remove('hidden');
-  });
-  if(installAppBtn) installAppBtn.addEventListener('click', async()=>{
-    closeThemeMenu();
-    if(deferredInstallPrompt){
-      deferredInstallPrompt.prompt();
-      try{ await deferredInstallPrompt.userChoice; }catch(_e){}
-      deferredInstallPrompt = null;
-      // El botón se mantiene disponible; si ya está instalada, el navegador abrirá la app en modo independiente.
-    }else{
-      alert('Abra esta página desde el enlace de GitHub Pages. En Android (Chrome), toque el menú del navegador y elija “Instalar aplicación” o “Agregar a pantalla principal”. En iPhone (Safari), toque Compartir → Agregar a pantalla de inicio.');
-    }
-  });
   applyViewTheme(state.viewTheme);
   updateFont(); renderList();
   const initial=location.hash.match(/^#himno-(\d+)$/); if(initial) openHymn(Number(initial[1]),false);
@@ -1275,10 +1259,8 @@ function safeLSRemove(k){
       setInstallVisible(false);
       return;
     }
-    // En el navegador debe mostrarse. El navegador no ofrece una forma fiable
-    // de saber si una PWA fue desinstalada después; por eso no ocultamos el botón
-    // basándonos únicamente en una marca vieja de localStorage.
-    setInstallVisible(true);
+    // Solo se muestra cuando Chrome ya entregó el instalador nativo.
+    setInstallVisible(!!installPromptV114);
   }
 
   // Si Chrome ofrece instalación, eso confirma que NO está instalada.
@@ -1321,16 +1303,13 @@ function safeLSRemove(k){
           }
         }catch(_e){}
         installPromptV114 = null;
+        setInstallVisible(false);
         return;
       }
 
-      // El botón sigue disponible aunque el evento todavía no haya llegado.
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      if(isIOS){
-        alert('Para instalar: abra esta página en Safari, toque Compartir y luego “Agregar a pantalla de inicio”.');
-      }else{
-        alert('Para instalar: abra esta página desde GitHub Pages en Chrome. Toque el menú ⋮ del navegador y elija “Instalar aplicación” o “Agregar a pantalla principal”.');
-      }
+      // Si Chrome todavía no ofrece instalación, no mostramos mensajes manuales.
+      // El botón permanecerá oculto hasta que llegue beforeinstallprompt.
+      setInstallVisible(false);
     }, true);
   }
 
@@ -1344,7 +1323,7 @@ function safeLSRemove(k){
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
     window.addEventListener('load', async () => {
       try{
-        const reg = await navigator.serviceWorker.register('./service-worker.js?v=130', {updateViaCache:'none'});
+        const reg = await navigator.serviceWorker.register('./service-worker.js?v=131', {updateViaCache:'none'});
         await reg.update();
         if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
       }catch(_e){}
